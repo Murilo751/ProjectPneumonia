@@ -1,0 +1,88 @@
+import numpy as np # linear algebra
+import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+
+import os
+for dirname, _, filenames in os.walk('/kaggle/input'):
+    for filename in filenames:
+        #print(os.path.join(dirname, filename))
+        pass
+
+import warnings
+warnings.filterwarnings('ignore')
+
+
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+import shutil
+import keras
+
+
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+import os
+image_size = (224, 224)
+batch_size = 50
+rescale_factor = 1.0 / 255
+
+data_datagen = ImageDataGenerator(rescale=1.0/255,  validation_split=0.20, featurewise_center=False,
+        samplewise_center=False,
+        rotation_range=10,
+        zoom_range = 0.1,
+        width_shift_range=0.1,
+        height_shift_range=0.1,
+        horizontal_flip=True,
+        vertical_flip=False)
+train_ds = data_datagen.flow_from_directory(
+    "/dataset/kaggle/input/chest-xray-pneumonia/chest_xray/train",
+    target_size=image_size,
+    batch_size=batch_size,
+    class_mode='binary',
+    subset='training'
+
+    )
+
+val_ds = data_datagen.flow_from_directory(
+    "/dataset/kaggle/input/chest-xray-pneumonia/chest_xray/train",
+      target_size=image_size,
+    batch_size=batch_size,
+    class_mode='binary',
+    subset='validation')
+
+test_datagen = ImageDataGenerator(rescale=1.0/255)
+
+test_ds = test_datagen.flow_from_directory(
+    "/dataset/kaggle/input/chest-xray-pneumonia/chest_xray/test",
+    target_size=image_size,
+    batch_size=batch_size,
+    class_mode='binary',
+    shuffle=True,
+    )
+
+
+    from tensorflow.keras.applications import VGG16
+    from tensorflow.keras import regularizers
+    def my_model_with_vgg(input_size=(224, 224, 3), num_classes=1):
+        # Carrega a base da VGG16 sem as camadas densas no topo
+        base_model = VGG16(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
+        # Congela os pesos da base para que não sejam treinados novament
+        model = keras.Sequential([
+            base_model,
+            layers.BatchNormalization(),
+            layers.Flatten(),
+            layers.Dense(256, activation="relu"),
+            layers.Dense(num_classes, activation="sigmoid"),
+        ])
+        return model
+
+
+        model_vgg = my_model_with_vgg(input_size=(224, 224, 3), num_classes=1)
+
+        model_vgg.summary()
+
+        model_vgg.compile(loss="binary_crossentropy",  optimizer="adam", metrics=["accuracy"])
+
+
+        batch_size = 16
+        epochs = 20
+
+        history = model_vgg.fit(train_ds, validation_data=val_ds, batch_size=batch_size, epochs=epochs)

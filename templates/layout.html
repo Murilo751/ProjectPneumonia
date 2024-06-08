@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Image Upload</title>
+</head>
+<body>
+<h1>Detector de Pneumonia</h1>
+<hr>
+<h3>Faça o upload de uma imagem de raio x de torax</h3>
+<form action="/predict" method="post" enctype="multipart/form-data">
+    <input type="file" name="file">
+    <input type="submit" value="Upload and Predict">
+</form>
+</body>
+</html>
