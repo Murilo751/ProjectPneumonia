@@ -6,7 +6,6 @@ import os
 
 app = Flask(__name__)
 
-# Verifica se o arquivo model.h5 existe e carrega o modelo
 model_path = 'model/model.h5'
 if not os.path.exists(model_path):
     raise FileNotFoundError(f"Modelo não encontrado no caminho: {model_path}")
@@ -14,9 +13,8 @@ if not os.path.exists(model_path):
 model = load_model(model_path)
 
 
-# Processamento da imagem
 def process_image(image_path):
-    image = load_img(image_path, target_size=(224, 224))
+    image = load_img(image_path, target_size=(150, 150))
     image = img_to_array(image)
     image = np.expand_dims(image, axis=0)
     image /= 255.0
@@ -26,7 +24,8 @@ def process_image(image_path):
 def index():
     return render_template('layout.html')
 
-@app.route('/predict', methods=['POST'])
+
+@app.route('/predict', methods=['POST', 'GET'])
 def predict():
     if 'file' not in request.files:
         return redirect(request.url)
@@ -37,30 +36,37 @@ def predict():
 
     if file:
         try:
-            # Assegura que o diretório de uploads exista
             uploads_dir = 'uploads'
             if not os.path.exists(uploads_dir):
                 os.makedirs(uploads_dir)
 
-            # Codificação do nome do arquivo para evitar problemas de caracteres
             filename = file.filename.encode('utf-8').decode('utf-8')
             image_path = os.path.join(uploads_dir, filename)
             file.save(image_path)
 
             if not os.path.exists(image_path):
-                return "An error occurred: file was not saved properly."
+                error_message = "An error occurred: file was not saved properly."
+                with open('error_log.txt', 'w', encoding='utf-8') as f:
+                    print(error_message, file=f)
+                return error_message
 
             processed_image = process_image(image_path)
             prediction = model.predict(processed_image)
             class_idx = int(prediction[0][0] > 0.5)  # 0.5 é o threshold para classes binárias
             class_label = 'Pneumonia' if class_idx == 1 else 'Normal'
 
-            # Remover a imagem após a predição
             os.remove(image_path)
 
-            return f'Prediction: {class_label}'
+            prediction_message = f'Prediction: {class_label}'
+            with open('prediction_log.txt', 'w', encoding='utf-8') as f:
+                print(prediction_message, file=f)
+
+            return prediction_message
         except Exception as e:
-            return f"An error occurred: {e}"
+            error_message = f"An error occurred: {e}"
+            with open('error_log.txt', 'w', encoding='utf-8') as f:
+                print(error_message, file=f)
+            return error_message
 
 if __name__ == "__main__":
     app.run(debug=True)
